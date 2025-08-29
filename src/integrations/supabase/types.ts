@@ -14,7 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      meeting_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          diff_meta: Json | null
+          id: string
+          label: string | null
+          meeting_id: string
+          minutes_html: string | null
+          minutes_json: Json | null
+          minutes_table: Json | null
+          transcript: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          diff_meta?: Json | null
+          id?: string
+          label?: string | null
+          meeting_id: string
+          minutes_html?: string | null
+          minutes_json?: Json | null
+          minutes_table?: Json | null
+          transcript?: string | null
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          diff_meta?: Json | null
+          id?: string
+          label?: string | null
+          meeting_id?: string
+          minutes_html?: string | null
+          minutes_json?: Json | null
+          minutes_table?: Json | null
+          transcript?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_versions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          ai_meta: Json | null
+          created_at: string
+          date: string | null
+          deleted_at: string | null
+          id: string
+          minutes_html: string | null
+          minutes_json: Json | null
+          minutes_table: Json | null
+          owner_id: string
+          participants: string[] | null
+          title: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_meta?: Json | null
+          created_at?: string
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          minutes_html?: string | null
+          minutes_json?: Json | null
+          minutes_table?: Json | null
+          owner_id: string
+          participants?: string[] | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_meta?: Json | null
+          created_at?: string
+          date?: string | null
+          deleted_at?: string | null
+          id?: string
+          minutes_html?: string | null
+          minutes_json?: Json | null
+          minutes_table?: Json | null
+          owner_id?: string
+          participants?: string[] | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shares: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          meeting_id: string
+          role: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          meeting_id: string
+          role: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          meeting_id?: string
+          role?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shares_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
