@@ -32,51 +32,63 @@ serve(async (req) => {
         'Authorization': `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://tkepzmiejtvauvxxkgru.supabase.co',
-        'X-Title': 'Meeting Minutes Generator'
+        'X-Title': 'ZapNote'
       },
       body: JSON.stringify({
         model: 'openai/gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: `You are an expert meeting minutes generator. Transform the provided transcript into well-structured meeting minutes.
+            content: `You are an expert meeting notes generator with extensive experience in business communication and documentation. Transform the provided transcript into well-structured, professional meeting notes.
 
-IMPORTANT: Return your response as a JSON object with this exact structure:
+IMPORTANT INSTRUCTIONS:
+1. Always respond in clear, professional English
+2. Use proper business terminology and formatting
+3. Identify key participants, decisions, and action items clearly
+4. Structure the content logically and chronologically
+5. Return your response as a JSON object with this exact structure:
+
 {
-  "minutes_html": "HTML formatted minutes with proper headings, lists, and formatting",
+  "minutes_html": "HTML formatted notes with proper headings (h2, h3), bullet points, and professional formatting. Use <h2> for main sections, <h3> for subsections, <ul> and <li> for lists, <strong> for emphasis, and <p> for paragraphs. Make it clean, professional, and easy to read.",
   "minutes_json": {
-    "title": "Meeting Title",
-    "date": "YYYY-MM-DD",
-    "participants": ["Name 1", "Name 2"],
+    "title": "Professional meeting title based on content",
+    "date": "YYYY-MM-DD format (use current date if not specified)",
+    "participants": ["Full names of all participants mentioned"],
     "agenda_items": [
       {
-        "topic": "Topic name",
-        "discussion": "Summary of discussion",
-        "decisions": ["Decision 1", "Decision 2"],
+        "topic": "Clear topic name",
+        "discussion": "Concise summary of discussion points in professional English",
+        "decisions": ["Specific decisions made, clearly stated"],
         "action_items": [
           {
-            "task": "Task description",
-            "assignee": "Person responsible",
-            "deadline": "Due date if mentioned"
+            "task": "Clear, actionable task description",
+            "assignee": "Full name of person responsible",
+            "deadline": "Due date if mentioned, or 'TBD' if not specified"
           }
         ]
       }
     ],
-    "next_meeting": "Next meeting info if mentioned"
+    "next_meeting": "Next meeting details if mentioned, or null if not specified"
   },
   "minutes_table": [
     {
-      "time": "timestamp or section",
+      "time": "Time marker or section identifier",
       "speaker": "Speaker name",
       "topic": "Discussion topic",
-      "key_points": ["Point 1", "Point 2"],
-      "decisions": ["Decision if any"],
-      "actions": ["Action items if any"]
+      "key_points": ["Key points discussed, clearly stated"],
+      "decisions": ["Decisions made, if any"],
+      "actions": ["Action items identified, if any"]
     }
   ]
 }
 
-Format the HTML with proper headings (h2, h3), bullet points, and emphasis. Make it clean and professional.`
+QUALITY REQUIREMENTS:
+- Ensure all text is in proper English with correct grammar and spelling
+- Use professional business language appropriate for meeting minutes
+- Make action items specific and actionable
+- Provide clear, concise summaries
+- Maintain professional tone throughout
+- Structure information logically and chronologically`
           },
           {
             role: 'user',
@@ -112,12 +124,12 @@ Format the HTML with proper headings (h2, h3), bullet points, and emphasis. Make
       console.log('Content is not JSON, creating structured response');
       // If not JSON, create a structured response
       result = {
-        minutes_html: `<div class="meeting-minutes">
-          <h2>Meeting Minutes</h2>
+        minutes_html: `<div class="meeting-notes">
+          <h2>Meeting Notes</h2>
           <div class="content">${generatedContent.replace(/\n/g, '<br>')}</div>
         </div>`,
         minutes_json: {
-          title: "Generated Meeting Minutes",
+          title: "Generated Meeting Notes",
           date: new Date().toISOString().split('T')[0],
           participants: [],
           agenda_items: [

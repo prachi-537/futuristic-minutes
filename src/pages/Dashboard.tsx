@@ -7,6 +7,7 @@ import { Loader2, Sparkles, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from '@/components/meeting/FileUpload';
+import MeetingMinutesDisplay from '@/components/meeting/MeetingMinutesDisplay';
 
 interface DashboardProps {
   user: any;
@@ -36,20 +37,25 @@ export default function Dashboard({ user }: DashboardProps) {
 
       if (error) throw error;
 
+      // Validate the response structure
+      if (!data || !data.minutes_json || !data.minutes_html) {
+        throw new Error('Invalid response format from AI service');
+      }
+
       setMinutes(data);
       
       // Save to database
       await saveMeetingToDatabase(data);
       
       toast({
-        title: "Minutes Generated!",
-        description: "Your meeting minutes have been successfully generated and saved.",
+        title: "Notes Generated!",
+        description: "Your meeting notes have been successfully generated and saved.",
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate meeting minutes.",
+        description: error.message || "Failed to generate meeting notes. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -60,7 +66,7 @@ export default function Dashboard({ user }: DashboardProps) {
   const saveMeetingToDatabase = async (minutesData: any) => {
     try {
       const meetingData = {
-        title: minutesData.minutes_json?.title || "Generated Meeting Minutes",
+        title: minutesData.minutes_json?.title || "Generated Meeting Notes",
         transcript: transcript,
         minutes_html: minutesData.minutes_html,
         minutes_json: minutesData.minutes_json,
@@ -99,17 +105,17 @@ export default function Dashboard({ user }: DashboardProps) {
         className="text-center"
       >
         <h1 className="text-4xl font-bold font-poppins bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
-          AI Meeting Minutes Generator
+          ZapNote
         </h1>
         <p className="text-lg text-muted-foreground">
-          Transform your meeting transcripts into professional, structured minutes
+          your AI buddy that zaps long meetings into crisp action minutes
         </p>
       </motion.div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Input Section */}
+                {/* Input Section */}
         <div className="space-y-6">
-          <FileUpload onFileContent={handleFileContent} loading={loading} />
+                     <FileUpload onFileContent={handleFileContent} loading={loading} />
           
           <Card className="film-card p-6">
             <div className="space-y-4">
@@ -133,7 +139,7 @@ export default function Dashboard({ user }: DashboardProps) {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Meeting Minutes
+                    Generate Notes
                   </>
                 )}
               </Button>
@@ -144,30 +150,16 @@ export default function Dashboard({ user }: DashboardProps) {
         {/* Output Section */}
         <div className="space-y-6">
           {minutes ? (
-            <Card className="film-card p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold font-poppins">Generated Minutes</h3>
-                  <Button size="sm" variant="outline" className="film-button">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-                <div 
-                  className="prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: minutes.minutes_html }}
-                />
-              </div>
-            </Card>
+            <MeetingMinutesDisplay minutes={minutes} />
           ) : (
             <Card className="film-card p-6 film-vignette">
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
                   <FileText className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold font-poppins mb-2">No Minutes Generated Yet</h3>
+                <h3 className="text-lg font-semibold font-poppins mb-2">No Notes Generated Yet</h3>
                 <p className="text-muted-foreground">
-                  Upload a transcript or paste it manually to generate structured meeting minutes
+                  Upload a transcript or paste it manually to generate structured meeting notes
                 </p>
               </div>
             </Card>

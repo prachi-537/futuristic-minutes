@@ -78,13 +78,13 @@ export default function Navbar({ user, onNewMeeting }: NavbarProps) {
             whileHover={{ scale: 1.05 }}
           >
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center cinematic-glow">
-              <span className="text-white font-bold text-lg font-poppins">MM</span>
+              <span className="text-white font-bold text-lg font-poppins">ZN</span>
             </div>
             <div>
               <h1 className="text-xl font-bold font-poppins bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Meeting Minutes
+                ZapNote
               </h1>
-              <p className="text-xs text-muted-foreground">AI-Powered Generator</p>
+              <p className="text-xs text-muted-foreground">AI-Powered Notes</p>
             </div>
           </motion.div>
 
@@ -97,7 +97,7 @@ export default function Navbar({ user, onNewMeeting }: NavbarProps) {
               size="sm"
             >
               <Plus className="w-4 h-4 mr-2" />
-              New Meeting
+              New Meetings
             </Button>
 
             {/* History Button */}
@@ -108,7 +108,7 @@ export default function Navbar({ user, onNewMeeting }: NavbarProps) {
               size="sm"
             >
               <History className="w-4 h-4 mr-2" />
-              History
+              Historyi
             </Button>
 
             {/* User Menu */}

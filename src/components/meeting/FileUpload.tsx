@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Loader2, File, FileImage } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { extractTextFromFile, isValidExtractedText } from '@/lib/text-extraction';
 
 interface FileUploadProps {
   onFileContent: (content: string, fileName: string) => void;
@@ -17,9 +17,21 @@ export default function FileUpload({ onFileContent, loading }: FileUploadProps) 
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+    // Add accepted files to the list
     setFiles(prev => [...prev, ...acceptedFiles]);
-  }, []);
+    
+    // Show error messages for rejected files
+    rejectedFiles.forEach(({ file, errors }) => {
+      errors.forEach((error: any) => {
+        toast({
+          title: "File Upload Failed",
+          description: error.message || "Failed to upload file",
+          variant: "destructive",
+        });
+      });
+    });
+  }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -29,84 +41,85 @@ export default function FileUpload({ onFileContent, loading }: FileUploadProps) 
       'application/pdf': ['.pdf']
     },
     maxSize: 10 * 1024 * 1024, // 10MB
+    validator: (file) => {
+      // Additional validation for supported file types
+      const isSupported = file.type === 'text/plain' || 
+                         file.type === 'application/pdf' || 
+                         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                         file.name.toLowerCase().endsWith('.txt') ||
+                         file.name.toLowerCase().endsWith('.pdf') ||
+                         file.name.toLowerCase().endsWith('.docx');
+      
+      if (!isSupported) {
+        return {
+          code: 'file-invalid-type',
+          message: 'Please upload a TXT, PDF, or DOCX file'
+        };
+      }
+      
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit for large files
+        return {
+          code: 'file-too-large',
+          message: 'File must be smaller than 50MB'
+        };
+      }
+      
+      return null;
+    }
   });
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Helper function to get the appropriate icon for each file type
+  const getFileIcon = (file: File) => {
+    if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+      return <FileText className="w-4 h-4 text-primary" />;
+    } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      return <FileImage className="w-4 h-4 text-red-500" />;
+    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+               file.name.toLowerCase().endsWith('.docx')) {
+      return <File className="w-4 h-4 text-blue-500" />;
+    }
+    return <FileText className="w-4 h-4 text-primary" />;
+  };
+
   const processFile = async (file: File) => {
     setProcessing(true);
     
     try {
-      if (file.type === 'text/plain') {
-        // Handle text files
-        const content = await file.text();
-        onFileContent(content, file.name);
-      } else if (file.type === 'application/pdf') {
-        // Handle PDF files with pdf-parse
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          
-          // Send to backend for PDF processing
-          const { data, error } = await supabase.functions.invoke('parse-pdf', {
-            body: { 
-              fileData: Array.from(uint8Array),
-              fileName: file.name 
-            }
-          });
-
-          if (error) throw error;
-          
-          onFileContent(data.text, file.name);
-          toast({
-            title: "PDF Processed",
-            description: `Successfully extracted text from ${file.name}`,
-          });
-        } catch (pdfError) {
-          console.error('PDF processing error:', pdfError);
-          toast({
-            title: "PDF Processing Failed",
-            description: "Could not extract text from PDF. Please try a different file or convert to text format.",
-            variant: "destructive",
-          });
-        }
-      } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // Handle DOCX files with mammoth
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          
-          // Send to backend for DOCX processing
-          const { data, error } = await supabase.functions.invoke('parse-docx', {
-            body: { 
-              fileData: Array.from(uint8Array),
-              fileName: file.name 
-            }
-          });
-
-          if (error) throw error;
-          
-          onFileContent(data.text, file.name);
-          toast({
-            title: "DOCX Processed",
-            description: `Successfully extracted text from ${file.name}`,
-          });
-        } catch (docxError) {
-          console.error('DOCX processing error:', docxError);
-          toast({
-            title: "DOCX Processing Failed",
-            description: "Could not extract text from DOCX. Please try a different file or convert to text format.",
-            variant: "destructive",
-          });
-        }
+      // Extract text from the uploaded file using our utility functions
+      const result = await extractTextFromFile(file);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to extract text from file');
       }
-    } catch (error) {
-      console.error('Error processing file:', error);
+      
+      // Validate that the extracted text is meaningful
+      if (!isValidExtractedText(result.text)) {
+        throw new Error('Extracted text appears to be corrupted or contains mostly non-readable characters');
+      }
+      
+      // Pass the extracted text to the parent component
+      onFileContent(result.text, file.name);
+      
+      // Show success message with file-specific details
+      let description = `Successfully extracted text from ${file.name}`;
+      if (result.pageCount) {
+        description += ` (${result.pageCount} page${result.pageCount > 1 ? 's' : ''})`;
+      }
+      
       toast({
-        title: "File Processing Error",
-        description: "Failed to process the file. Please try again.",
+        title: "File Processed Successfully!",
+        description: description,
+      });
+      
+    } catch (error) {
+      console.error('File processing error:', error);
+      toast({
+        title: "File Processing Failed",
+        description: error instanceof Error ? error.message : "Failed to process the file. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -170,15 +183,15 @@ export default function FileUpload({ onFileContent, loading }: FileUploadProps) 
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
               >
-                <div className="flex items-center space-x-3">
-                  <FileText className="w-4 h-4 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
+                                 <div className="flex items-center space-x-3">
+                   {getFileIcon(file)}
+                   <div>
+                     <p className="text-sm font-medium">{file.name}</p>
+                     <p className="text-xs text-muted-foreground">
+                       {(file.size / 1024 / 1024).toFixed(2)} MB
+                     </p>
+                   </div>
+                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -214,19 +227,7 @@ export default function FileUpload({ onFileContent, loading }: FileUploadProps) 
           </Button>
         )}
 
-        {/* Manual Input Option */}
-        <div className="text-center">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or paste transcript manually
-              </span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </Card>
   );
