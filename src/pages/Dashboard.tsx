@@ -37,9 +37,13 @@ export default function Dashboard({ user }: DashboardProps) {
       if (error) throw error;
 
       setMinutes(data);
+      
+      // Save to database
+      await saveMeetingToDatabase(data);
+      
       toast({
         title: "Minutes Generated!",
-        description: "Your meeting minutes have been successfully generated.",
+        description: "Your meeting minutes have been successfully generated and saved.",
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -50,6 +54,32 @@ export default function Dashboard({ user }: DashboardProps) {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveMeetingToDatabase = async (minutesData: any) => {
+    try {
+      const meetingData = {
+        title: minutesData.minutes_json?.title || "Generated Meeting Minutes",
+        transcript: transcript,
+        minutes_html: minutesData.minutes_html,
+        minutes_json: minutesData.minutes_json,
+        minutes_table: minutesData.minutes_table,
+        participants: minutesData.minutes_json?.participants || [],
+        date: minutesData.minutes_json?.date ? new Date(minutesData.minutes_json.date).toISOString() : new Date().toISOString(),
+        owner_id: user.id
+      };
+
+      const { error } = await supabase
+        .from('meetings')
+        .insert(meetingData);
+
+      if (error) throw error;
+      
+      console.log('Meeting saved to database successfully');
+    } catch (error) {
+      console.error('Error saving meeting to database:', error);
+      // Don't show error to user since minutes were still generated
     }
   };
 

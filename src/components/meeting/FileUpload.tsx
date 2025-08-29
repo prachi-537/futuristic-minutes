@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FileUploadProps {
   onFileContent: (content: string, fileName: string) => void;
@@ -43,20 +44,63 @@ export default function FileUpload({ onFileContent, loading }: FileUploadProps) 
         const content = await file.text();
         onFileContent(content, file.name);
       } else if (file.type === 'application/pdf') {
-        // For PDF files, we'd need a PDF parsing library
-        // For now, we'll show an upload message
-        toast({
-          title: "PDF Processing",
-          description: "PDF processing is not yet implemented. Please use text files for now.",
-          variant: "destructive",
-        });
+        // Handle PDF files with pdf-parse
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          // Send to backend for PDF processing
+          const { data, error } = await supabase.functions.invoke('parse-pdf', {
+            body: { 
+              fileData: Array.from(uint8Array),
+              fileName: file.name 
+            }
+          });
+
+          if (error) throw error;
+          
+          onFileContent(data.text, file.name);
+          toast({
+            title: "PDF Processed",
+            description: `Successfully extracted text from ${file.name}`,
+          });
+        } catch (pdfError) {
+          console.error('PDF processing error:', pdfError);
+          toast({
+            title: "PDF Processing Failed",
+            description: "Could not extract text from PDF. Please try a different file or convert to text format.",
+            variant: "destructive",
+          });
+        }
       } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // For DOCX files, we'd need a DOCX parsing library  
-        toast({
-          title: "DOCX Processing",
-          description: "DOCX processing is not yet implemented. Please use text files for now.",
-          variant: "destructive",
-        });
+        // Handle DOCX files with mammoth
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          // Send to backend for DOCX processing
+          const { data, error } = await supabase.functions.invoke('parse-docx', {
+            body: { 
+              fileData: Array.from(uint8Array),
+              fileName: file.name 
+            }
+          });
+
+          if (error) throw error;
+          
+          onFileContent(data.text, file.name);
+          toast({
+            title: "DOCX Processed",
+            description: `Successfully extracted text from ${file.name}`,
+          });
+        } catch (docxError) {
+          console.error('DOCX processing error:', docxError);
+          toast({
+            title: "DOCX Processing Failed",
+            description: "Could not extract text from DOCX. Please try a different file or convert to text format.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Error processing file:', error);

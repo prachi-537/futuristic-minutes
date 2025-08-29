@@ -103,7 +103,7 @@ export default function Navbar({ user, onNewMeeting }: NavbarProps) {
             {/* History Button */}
             <Button 
               variant="outline"
-              onClick={() => navigate('/history')}
+              onClick={() => window.location.href = '/#history'}
               className="film-button fps-hover"
               size="sm"
             >

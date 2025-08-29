@@ -4,11 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import AuthPage from '@/components/auth/AuthPage';
 import Navbar from '@/components/layout/Navbar';
 import Dashboard from './Dashboard';
+import History from './History';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'history'>('dashboard');
+
+  useEffect(() => {
+    // Check for hash navigation
+    const hash = window.location.hash.substring(1);
+    if (hash === 'history') {
+      setCurrentView('history');
+    }
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener
@@ -32,7 +42,7 @@ const Index = () => {
 
   const handleNewMeeting = () => {
     // Reset to create new meeting
-    window.location.reload();
+    setCurrentView('dashboard');
   };
 
   if (loading) {
@@ -59,7 +69,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background film-grain">
       <Navbar user={user} onNewMeeting={handleNewMeeting} />
-      <Dashboard user={user} />
+      {currentView === 'dashboard' ? (
+        <Dashboard user={user} />
+      ) : (
+        <History user={user} />
+      )}
     </div>
   );
 };
